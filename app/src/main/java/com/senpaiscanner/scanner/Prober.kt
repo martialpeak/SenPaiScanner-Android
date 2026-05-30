@@ -16,12 +16,8 @@ import javax.net.ssl.X509TrustManager
 
 object Prober {
 
-    private val SNI_HOSTS = listOf(
-        "speed.cloudflare.com",
-        "www.cloudflare.com",
-        "cloudflare.com",
-        "blog.cloudflare.com"
-    )
+    // ثابت نگه داشتن SNI برای نتایج قابل اعتماد
+    private const val PROBE_SNI = "speed.cloudflare.com"
 
     private val trustAllSsl: SSLContext by lazy {
         val tm = object : X509TrustManager {
@@ -33,36 +29,37 @@ object Prober {
     }
 
     fun probe(ip: String, port: Int, mode: ProbeMode, tries: Int, timeoutMs: Long): ScanResult {
-        val latencies = LongArray(tries)
+        val latencies = mutableListOf<Long>()
         var tlsOk = false
         var httpStatus = 0
         var colo = ""
+        var successCount = 0
 
         for (i in 0 until tries) {
-            val sni = SNI_HOSTS.random()
             when (mode) {
                 ProbeMode.TCP -> {
-                    latencies[i] = probeTcp(ip, port, timeoutMs)
+                    val lat = probeTcp(ip, port, timeoutMs)
+                    if (lat > 0) { latencies.add(lat); successCount++ }
                 }
                 ProbeMode.TLS -> {
-                    val (lat, ok) = probeTls(ip, port, sni, timeoutMs)
-                    latencies[i] = lat
-                    if (ok) tlsOk = true
+                    val (lat, ok) = probeTls(ip, port, PROBE_SNI, timeoutMs)
+                    if (lat > 0) latencies.add(lat)
+                    if (ok) { successCount++; tlsOk = true }
                 }
                 ProbeMode.HTTP -> {
                     val r = probeHttp(ip, port, timeoutMs)
-                    latencies[i] = r.latencyMs
+                    if (r.latencyMs > 0) latencies.add(r.latencyMs)
                     if (r.tlsOk) tlsOk = true
+                    if (r.success) successCount++
                     if (r.httpStatus != 0) httpStatus = r.httpStatus
                     if (r.colo.isNotEmpty()) colo = r.colo
                 }
             }
-            if (i < tries - 1) Thread.sleep((10..60).random().toLong())
+            if (i < tries - 1) Thread.sleep(20)
         }
 
-        val successfulLats = latencies.filter { it > 0 }
-        val loss = if (tries == 0) 100f else (tries - successfulLats.size).toFloat() / tries * 100f
-        val avgLat = if (successfulLats.isEmpty()) 0L else successfulLats.average().toLong()
+        val loss = if (tries == 0) 100f else ((tries - successCount).toFloat() / tries) * 100f
+        val avgLat = if (latencies.isEmpty()) 0L else latencies.average().toLong()
 
         return ScanResult(
             ip = ip,
@@ -104,17 +101,16 @@ object Prober {
     private data class HttpProbeResult(
         val latencyMs: Long,
         val tlsOk: Boolean,
+        val success: Boolean,
         val httpStatus: Int,
         val colo: String
     )
 
     private fun probeHttp(ip: String, port: Int, timeoutMs: Long): HttpProbeResult {
         return try {
-            val sni = "speed.cloudflare.com"
             val scheme = if (port == 80) "http" else "https"
-            val url = "$scheme://$sni/cdn-cgi/trace"
+            val url = "$scheme://$PROBE_SNI/cdn-cgi/trace"
 
-            // Explicit Dns implementation — avoids lambda type inference issues
             val fixedDns = object : Dns {
                 override fun lookup(hostname: String): List<InetAddress> {
                     return listOf(InetAddress.getByName(ip))
@@ -145,13 +141,18 @@ object Prober {
             val lat = System.currentTimeMillis() - start
 
             val body = resp.body?.string() ?: ""
+            // IP باید واقعاً Cloudflare باشه — اگه colo خالیه، IP جعلیه
             val colo = parseColoCdn(body).ifEmpty {
                 parseColoRay(resp.header("CF-Ray") ?: "")
             }
 
-            HttpProbeResult(lat, resp.isSuccessful, resp.code, colo)
+            // IP فقط اگه colo داشته باشه واقعاً Cloudflare است
+            val isRealCf = colo.isNotEmpty()
+            val success = resp.code == 200 && isRealCf
+
+            HttpProbeResult(lat, true, success, resp.code, colo)
         } catch (e: Exception) {
-            HttpProbeResult(0L, false, 0, "")
+            HttpProbeResult(0L, false, false, 0, "")
         }
     }
 

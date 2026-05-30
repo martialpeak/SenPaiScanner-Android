@@ -3,16 +3,28 @@ package com.senpaiscanner.model
 data class ScanResult(
     val ip: String,
     val port: Int,
-    val latencyMs: Long,       // avg latency in ms, 0 = failed
-    val loss: Float,           // 0.0 – 100.0
+    val latencyMs: Long,
+    val loss: Float,
     val tlsOk: Boolean,
     val wsOk: Boolean,
-    val httpStatus: Int,       // 0 if not probed
-    val colo: String,          // e.g. "THR", "AMS"
-    val throughputKbps: Double // 0 if not measured
+    val httpStatus: Int,
+    val colo: String,
+    val throughputKbps: Double
 ) {
+    // IP باید: پینگ داشته باشه، loss کمتر از 20%، TLS موفق، و HTTP 200 برگردونه
     val isHealthy: Boolean
-        get() = latencyMs > 0 && loss < 100f
+        get() = latencyMs > 0
+            && loss <= 20f
+            && tlsOk
+            && (httpStatus == 200 || httpStatus == 0)
+
+    val qualityLabel: String
+        get() = when {
+            !isHealthy -> "✗"
+            latencyMs < 100 -> "★★★"
+            latencyMs < 200 -> "★★☆"
+            else -> "★☆☆"
+        }
 
     val latencyLabel: String
         get() = if (latencyMs > 0) "${latencyMs}ms" else "—"
