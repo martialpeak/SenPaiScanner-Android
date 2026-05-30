@@ -128,9 +128,7 @@ object Prober {
                     override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
                 })
                 .hostnameVerifier { _, _ -> true }
-                .dns { _ ->
-                    listOf(java.net.InetAddress.getByName(ip))
-                }
+                .dns(okhttp3.Dns { _ -> listOf(java.net.InetAddress.getByName(ip)) })
                 .build()
 
             val req = Request.Builder()

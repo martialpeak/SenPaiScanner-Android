@@ -28,7 +28,7 @@ object IpSource {
         "131.0.72.0/22"
     )
 
-    private data class CidrRange(
+    internal data class CidrRange(
         val baseInt: Long,
         val hostBits: Int,
         val isV6: Boolean
@@ -51,7 +51,7 @@ object IpSource {
     /**
      * Parse a custom CIDR string (IPv4 only for now).
      */
-    fun parseCidr(cidr: String): CidrRange? {
+    internal fun parseCidr(cidr: String): CidrRange? {
         return try { parseCidrV4(cidr.trim()) } catch (e: Exception) { null }
     }
 
