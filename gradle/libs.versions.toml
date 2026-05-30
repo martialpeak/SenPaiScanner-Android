@@ -22,6 +22,3 @@ activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
-[libraries-extra]
-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version = "1.9.0" }
