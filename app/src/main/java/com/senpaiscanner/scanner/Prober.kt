@@ -2,8 +2,10 @@ package com.senpaiscanner.scanner
 
 import com.senpaiscanner.model.ProbeMode
 import com.senpaiscanner.model.ScanResult
+import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.security.cert.X509Certificate
@@ -11,12 +13,7 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.X509TrustManager
-import kotlin.math.sqrt
 
-/**
- * Mirrors the probe logic from internal/prober/prober.go
- * Uses TCP/TLS/HTTP — no raw sockets, works without root.
- */
 object Prober {
 
     private val SNI_HOSTS = listOf(
@@ -26,7 +23,6 @@ object Prober {
         "blog.cloudflare.com"
     )
 
-    // Trust-all SSL context for Phase 1 (cert already verified in HTTP mode)
     private val trustAllSsl: SSLContext by lazy {
         val tm = object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
@@ -39,7 +35,6 @@ object Prober {
     fun probe(ip: String, port: Int, mode: ProbeMode, tries: Int, timeoutMs: Long): ScanResult {
         val latencies = LongArray(tries)
         var tlsOk = false
-        var wsOk = false
         var httpStatus = 0
         var colo = ""
 
@@ -75,7 +70,7 @@ object Prober {
             latencyMs = avgLat,
             loss = loss,
             tlsOk = tlsOk,
-            wsOk = wsOk,
+            wsOk = false,
             httpStatus = httpStatus,
             colo = colo,
             throughputKbps = 0.0
@@ -119,16 +114,25 @@ object Prober {
             val scheme = if (port == 80) "http" else "https"
             val url = "$scheme://$sni/cdn-cgi/trace"
 
+            // Explicit Dns implementation — avoids lambda type inference issues
+            val fixedDns = object : Dns {
+                override fun lookup(hostname: String): List<InetAddress> {
+                    return listOf(InetAddress.getByName(ip))
+                }
+            }
+
+            val trustManager = object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            }
+
             val client = OkHttpClient.Builder()
                 .connectTimeout(timeoutMs / 4, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-                .sslSocketFactory(trustAllSsl.socketFactory, object : X509TrustManager {
-                    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-                    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-                    override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-                })
+                .sslSocketFactory(trustAllSsl.socketFactory, trustManager)
                 .hostnameVerifier { _, _ -> true }
-                .dns(okhttp3.Dns { _ -> listOf(java.net.InetAddress.getByName(ip)) })
+                .dns(fixedDns)
                 .build()
 
             val req = Request.Builder()
@@ -153,9 +157,8 @@ object Prober {
 
     private fun parseColoCdn(body: String): String {
         for (line in body.lines()) {
-            val trimmed = line.trimEnd('\r')
-            if (trimmed.startsWith("colo=")) {
-                return trimmed.removePrefix("colo=").trim()
+            if (line.trimEnd('\r').startsWith("colo=")) {
+                return line.trimEnd('\r').removePrefix("colo=").trim()
             }
         }
         return ""
