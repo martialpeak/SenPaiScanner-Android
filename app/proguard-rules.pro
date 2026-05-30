@@ -1,0 +1,4 @@
+-keep class com.senpaiscanner.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn javax.annotation.**
