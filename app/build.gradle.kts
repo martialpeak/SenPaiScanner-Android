@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.senpaiscanner"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.senpaiscanner"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
     }
@@ -33,6 +33,16 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            // Force newer versions of legacy support libs to avoid conflicts
+            force("androidx.legacy:legacy-support-core-utils:1.0.0")
+            force("androidx.documentfile:documentfile:1.1.0")
+            force("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+            force("androidx.print:print:1.1.0")
+        }
     }
 }
 
