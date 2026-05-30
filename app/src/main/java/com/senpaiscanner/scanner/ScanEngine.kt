@@ -59,7 +59,7 @@ class ScanEngine {
                     inFlight.incrementAndGet()
                     try {
                         if (!isActive) return@launch
-                        val result = Prober.probe(ip, cfg.port, cfg.mode, cfg.tries, cfg.timeoutMs)
+                        val result = Prober.probe(ip, cfg)
                         tested.incrementAndGet()
                         if (result.isHealthy) healthy.incrementAndGet() else failed.incrementAndGet()
                         _results.emit(result)

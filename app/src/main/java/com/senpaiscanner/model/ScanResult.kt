@@ -11,7 +11,6 @@ data class ScanResult(
     val colo: String,
     val throughputKbps: Double
 ) {
-    // IP باید: پینگ داشته باشه، loss کمتر از 20%، TLS موفق، و HTTP 200 برگردونه
     val isHealthy: Boolean
         get() = latencyMs > 0
             && loss <= 20f
@@ -50,7 +49,11 @@ data class ScanConfig(
     val useV4: Boolean = true,
     val useV6: Boolean = false,
     val cidr: String = "",
-    val configUrl: String = ""
+    val configUrl: String = "",
+    // فیلدهای جدید — از کانفیگ استخراج می‌شن
+    val sni: String = "speed.cloudflare.com",
+    val wsPath: String = "/cdn-cgi/trace",
+    val transport: String = "tcp"
 )
 
 enum class ProbeMode { TCP, TLS, HTTP }

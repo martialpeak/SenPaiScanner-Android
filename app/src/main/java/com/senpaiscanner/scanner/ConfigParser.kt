@@ -4,10 +4,6 @@ import android.net.Uri
 import com.senpaiscanner.model.ProbeMode
 import com.senpaiscanner.model.ScanConfig
 
-/**
- * Parses a VLESS or Trojan config URL and extracts scan-relevant fields.
- * Mirrors the config URL parsing in internal/ui/cmds.go
- */
 object ConfigParser {
 
     data class ParsedConfig(
@@ -15,7 +11,7 @@ object ConfigParser {
         val sni: String,
         val mode: ProbeMode,
         val wsPath: String,
-        val transport: String // ws, grpc, xhttp, tcp
+        val transport: String
     )
 
     fun parse(url: String): ParsedConfig? {
@@ -29,8 +25,9 @@ object ConfigParser {
 
             val security = params["security"]?.lowercase() ?: "tls"
             val type = params["type"]?.lowercase() ?: "tcp"
-            val sni = params["sni"] ?: params["host"] ?: uri.host ?: "cloudflare.com"
-            val wsPath = params["path"] ?: "/"
+            val sni = params["sni"] ?: params["host"] ?: uri.host ?: "speed.cloudflare.com"
+            // path واقعی کانفیگ — برای probe استفاده می‌شه
+            val wsPath = params["path"]?.let { Uri.decode(it) } ?: "/cdn-cgi/trace"
 
             val mode = when {
                 type == "ws" || type == "websocket" -> ProbeMode.HTTP
@@ -47,12 +44,14 @@ object ConfigParser {
         return base.copy(
             port = parsed.port,
             mode = parsed.mode,
+            sni = parsed.sni,
+            wsPath = parsed.wsPath,
+            transport = parsed.transport,
             configUrl = url
         )
     }
 
     private fun parseFragment(fragment: String): Map<String, String> {
-        // Some clients encode params in the fragment
         return fragment.split("&").mapNotNull {
             val kv = it.split("=", limit = 2)
             if (kv.size == 2) kv[0] to Uri.decode(kv[1]) else null
