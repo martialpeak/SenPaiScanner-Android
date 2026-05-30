@@ -34,14 +34,19 @@ android {
     buildFeatures {
         viewBinding = true
     }
+}
 
-    configurations.all {
-        resolutionStrategy {
-            // Force newer versions of legacy support libs to avoid conflicts
-            force("androidx.legacy:legacy-support-core-utils:1.0.0")
-            force("androidx.documentfile:documentfile:1.1.0")
-            force("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-            force("androidx.print:print:1.1.0")
+configurations.all {
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "androidx.legacy" -> useVersion("1.0.0")
+            "androidx.documentfile" -> useVersion("1.1.0")
+            "androidx.localbroadcastmanager" -> useVersion("1.1.0")
+            "androidx.print" -> useVersion("1.1.0")
+            "androidx.transition" -> useVersion("1.5.0")
+            "androidx.viewpager2" -> useVersion("1.1.0")
+            "androidx.dynamicanimation" -> useVersion("1.0.0")
+            "androidx.recyclerview" -> useVersion("1.3.2")
         }
     }
 }
