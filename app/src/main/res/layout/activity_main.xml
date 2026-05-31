@@ -1,112 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg_primary"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/header_title"
+            android:textColor="@color/accent"
+            android:textSize="22sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/version_label"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:layout_marginEnd="4dp"/>
+
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:background="@drawable/chip_bg"
+            android:tint="@color/text_secondary"
+            android:contentDescription="@string/settings_title"
+            android:layout_marginEnd="4dp"/>
+
+        <Button
+            android:id="@+id/btn_help"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="?"
+            android:textSize="13sp"
+            android:fontFamily="monospace"
+            android:textColor="@color/text_secondary"
+            android:backgroundTint="@color/surface"
+            android:padding="0dp"/>
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_preset_quick"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="@string/preset_quick"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btn_preset_normal"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="@string/preset_normal"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btn_preset_deep"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="@string/preset_deep"
+                android:textSize="11sp"
+                android:fontFamily="monospace"/>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Header -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="20dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/header_title"
-                    android:textColor="@color/accent"
-                    android:textSize="22sp"
-                    android:fontFamily="monospace"
-                    android:textStyle="bold"/>
-
-                <TextView
-                    android:id="@+id/tv_version"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/version_label"
-                    android:textColor="@color/text_dim"
-                    android:textSize="11sp"
-                    android:fontFamily="monospace"
-                    android:layout_marginEnd="8dp"/>
-
-                <Button
-                    android:id="@+id/btn_help"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:text="?"
-                    android:textSize="13sp"
-                    android:fontFamily="monospace"
-                    android:textColor="@color/text_secondary"
-                    android:backgroundTint="@color/surface"
-                    android:padding="0dp"/>
-            </LinearLayout>
-
-            <!-- Config URL -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="CONFIG URL  (VLESS / Trojan)"
-                android:textColor="@color/text_dim"
-                android:textSize="11sp"
-                android:fontFamily="monospace"
-                android:layout_marginBottom="4dp"/>
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_config_url"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="vless://... or trojan://..."
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_dim"
-                    android:textSize="12sp"
-                    android:fontFamily="monospace"
-                    android:background="@drawable/input_bg"
-                    android:padding="12dp"
-                    android:inputType="textNoSuggestions"
-                    android:maxLines="2"/>
-
-                <ImageButton
-                    android:id="@+id/btn_clear"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@android:drawable/ic_menu_close_clear_cancel"
-                    android:background="@drawable/chip_bg"
-                    android:tint="@color/text_dim"
-                    android:contentDescription="Clear"/>
-            </LinearLayout>
-
-            <!-- Row: Count + Port -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -124,7 +131,7 @@
                         android:fontFamily="monospace"
                         android:layout_marginBottom="4dp"/>
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <EditText
                         android:id="@+id/et_count"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -153,7 +160,7 @@
                         android:fontFamily="monospace"
                         android:layout_marginBottom="4dp"/>
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <EditText
                         android:id="@+id/et_port"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -167,12 +174,10 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Concurrency slider -->
             <TextView
                 android:id="@+id/tv_concurrency_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="WORKERS  —  50"
                 android:textColor="@color/text_dim"
                 android:textSize="11sp"
                 android:fontFamily="monospace"
@@ -189,14 +194,12 @@
                 app:thumbColor="@color/accent"
                 app:trackColorActive="@color/accent"
                 app:trackColorInactive="@color/surface"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="12dp"/>
 
-            <!-- Timeout slider -->
             <TextView
                 android:id="@+id/tv_timeout_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="TIMEOUT  —  5s"
                 android:textColor="@color/text_dim"
                 android:textSize="11sp"
                 android:fontFamily="monospace"
@@ -213,9 +216,8 @@
                 app:thumbColor="@color/accent"
                 app:trackColorActive="@color/accent"
                 app:trackColorInactive="@color/surface"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="12dp"/>
 
-            <!-- Custom CIDR -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -225,11 +227,11 @@
                 android:fontFamily="monospace"
                 android:layout_marginBottom="4dp"/>
 
-            <com.google.android.material.textfield.TextInputEditText
+            <EditText
                 android:id="@+id/et_cidr"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g. 104.16.0.0/13"
+                android:hint="@string/hint_cidr"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_dim"
                 android:textSize="13sp"
@@ -237,9 +239,8 @@
                 android:background="@drawable/input_bg"
                 android:padding="12dp"
                 android:inputType="textNoSuggestions"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="12dp"/>
 
-            <!-- Mode chips -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -253,7 +254,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="20dp">
+                android:layout_marginBottom="12dp">
 
                 <TextView
                     android:id="@+id/chip_tcp"
@@ -300,19 +301,18 @@
                     android:focusable="true"/>
             </LinearLayout>
 
-            <!-- Healthy Only toggle -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="HEALTHY ONLY  /  فقط سالم‌ها"
+                    android:text="@string/label_healthy_only"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp"
                     android:fontFamily="monospace"/>
@@ -326,13 +326,11 @@
                     app:trackTint="@color/surface_variant"/>
             </LinearLayout>
 
-
-            <!-- Scan button -->
             <Button
                 android:id="@+id/btn_scan"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:text="▶  SCAN"
+                android:text="@string/btn_scan"
                 android:textColor="@color/bg_primary"
                 android:textSize="15sp"
                 android:fontFamily="monospace"
@@ -340,7 +338,6 @@
                 android:backgroundTint="@color/accent"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- Progress -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progress_scan"
                 android:layout_width="match_parent"
@@ -348,25 +345,34 @@
                 android:visibility="invisible"
                 app:indicatorColor="@color/accent"
                 app:trackColor="@color/surface"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="4dp"/>
 
-            <!-- Stats row -->
+            <TextView
+                android:id="@+id/tv_eta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_dim"
+                android:textSize="10sp"
+                android:fontFamily="monospace"
+                android:visibility="gone"
+                android:layout_marginBottom="12dp"/>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="16dp"
                 android:background="@drawable/stats_bg"
-                android:padding="12dp">
+                android:padding="12dp"
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                     android:layout_weight="1" android:orientation="vertical" android:gravity="center">
                     <TextView android:id="@+id/tv_stats_tested" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="0"
-                        android:textColor="@color/text_primary" android:textSize="18sp"
+                        android:textColor="@color/text_primary" android:textSize="16sp"
                         android:fontFamily="monospace" android:textStyle="bold"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="TESTED" android:textColor="@color/text_dim" android:textSize="9sp"
+                        android:text="@string/stat_tested" android:textColor="@color/text_dim" android:textSize="9sp"
                         android:fontFamily="monospace"/>
                 </LinearLayout>
 
@@ -374,10 +380,10 @@
                     android:layout_weight="1" android:orientation="vertical" android:gravity="center">
                     <TextView android:id="@+id/tv_stats_healthy" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="0"
-                        android:textColor="@color/good" android:textSize="18sp"
+                        android:textColor="@color/good" android:textSize="16sp"
                         android:fontFamily="monospace" android:textStyle="bold"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="HEALTHY" android:textColor="@color/text_dim" android:textSize="9sp"
+                        android:text="@string/stat_healthy" android:textColor="@color/text_dim" android:textSize="9sp"
                         android:fontFamily="monospace"/>
                 </LinearLayout>
 
@@ -385,10 +391,10 @@
                     android:layout_weight="1" android:orientation="vertical" android:gravity="center">
                     <TextView android:id="@+id/tv_stats_failed" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="0"
-                        android:textColor="@color/bad" android:textSize="18sp"
+                        android:textColor="@color/bad" android:textSize="16sp"
                         android:fontFamily="monospace" android:textStyle="bold"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="FAILED" android:textColor="@color/text_dim" android:textSize="9sp"
+                        android:text="@string/stat_failed" android:textColor="@color/text_dim" android:textSize="9sp"
                         android:fontFamily="monospace"/>
                 </LinearLayout>
 
@@ -396,15 +402,14 @@
                     android:layout_weight="1" android:orientation="vertical" android:gravity="center">
                     <TextView android:id="@+id/tv_stats_in_flight" android:layout_width="wrap_content"
                         android:layout_height="wrap_content" android:text="0"
-                        android:textColor="@color/accent" android:textSize="18sp"
+                        android:textColor="@color/accent" android:textSize="16sp"
                         android:fontFamily="monospace" android:textStyle="bold"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="ACTIVE" android:textColor="@color/text_dim" android:textSize="9sp"
+                        android:text="@string/stat_inflight" android:textColor="@color/text_dim" android:textSize="9sp"
                         android:fontFamily="monospace"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Results header + action buttons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -421,14 +426,19 @@
                     android:textSize="11sp"
                     android:fontFamily="monospace"/>
 
-                <Button
-                    android:id="@+id/btn_export"
+                <Spinner
+                    android:id="@+id/spinner_colo"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
-                    android:text="CSV"
-                    android:textSize="10sp"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_export_menu"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="⤓"
+                    android:textSize="12sp"
                     android:fontFamily="monospace"
-                    android:textColor="@color/text_secondary"
                     android:backgroundTint="@color/surface"
                     android:layout_marginEnd="4dp"
                     android:visibility="gone"/>
@@ -438,70 +448,36 @@
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
                     android:text="↑"
-                    android:textSize="13sp"
-                    android:fontFamily="monospace"
-                    android:textColor="@color/text_secondary"
-                    android:backgroundTint="@color/surface"
-                    android:layout_marginEnd="4dp"
-                    android:visibility="gone"/>
+                    android:visibility="gone"
+                    android:backgroundTint="@color/surface"/>
 
                 <Button
                     android:id="@+id/btn_copy"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
                     android:text="⎘"
-                    android:textSize="13sp"
-                    android:fontFamily="monospace"
-                    android:textColor="@color/accent"
-                    android:backgroundTint="@color/surface"
-                    android:visibility="gone"/>
+                    android:visibility="gone"
+                    android:backgroundTint="@color/surface"/>
             </LinearLayout>
 
-            <!-- Column headers -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="4dp"
-                android:paddingHorizontal="8dp">
-
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="3" android:text="IP:PORT"
-                    android:textColor="@color/text_dim" android:textSize="10sp" android:fontFamily="monospace"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="2" android:text="LATENCY"
-                    android:textColor="@color/text_dim" android:textSize="10sp" android:fontFamily="monospace"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:text="LOSS"
-                    android:textColor="@color/text_dim" android:textSize="10sp" android:fontFamily="monospace"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:text="QUAL"
-                    android:textColor="@color/text_dim" android:textSize="10sp" android:fontFamily="monospace"/>
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:text="COLO"
-                    android:textColor="@color/text_dim" android:textSize="10sp" android:fontFamily="monospace"/>
-            </LinearLayout>
-
-            <!-- Empty state -->
             <TextView
                 android:id="@+id/tv_empty"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
                 android:text="@string/empty_results"
                 android:gravity="center"
                 android:textColor="@color/text_dim"
                 android:textSize="13sp"
                 android:fontFamily="monospace"/>
-
-            <!-- Results list -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler_results"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:visibility="invisible"/>
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_results"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.2"
+        android:visibility="gone"/>
+
+</LinearLayout>

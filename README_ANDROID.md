@@ -1,79 +1,36 @@
-# SenPai Scanner — Android v2.0
+# SenPai Scanner — Android v3.0
 
-**یه اسکنر سبک برای پیدا کردن بهترین IPهای Cloudflare**
-**A lightweight scanner to find the best Cloudflare IPs**
+Cloudflare IP scanner for Android.
 
----
+## Features (v3.0)
 
-## 🔧 Build / ساخت
+- **Presets** — Quick / Normal / Deep
+- **Stop after N healthy** — saves time and battery
+- **Skip failed IPs** — remembers bad IPs between scans
+- **Foreground scan** — notification with progress
+- **Settings** — custom SNI, probe path, IPv6, schedule, vibration
+- **Colo filter** — filter results by datacenter
+- **Export** — plain, CSV, Clash, sing-box, V2Ray URI
+- **Tap row** — copy `ip:port`
+- **Compare scans** — stable IPs vs previous run
+- **Widget** — last top IPs on home screen
+- **Scheduled scan** — WorkManager periodic (Settings)
+- **ETA** — remaining time and IP/s during scan
+- **CF ranges** — loaded from `assets/cf_ranges.json`
+
+## Build
 
 ```bash
-./gradlew assembleRelease
-# APK: app/build/outputs/apk/release/app-release.apk
+./gradlew assembleDebug
+./gradlew testDebugUnitTest
 ```
 
----
-
-## 📡 حالت‌های اسکن / Scan Modes
-
-| Mode | توضیح | Description |
-|------|-------|-------------|
-| **TCP** | فقط اتصال پایه — سریع‌ترین | Raw socket connect — fastest |
-| **TLS** | TLS handshake کامل | Full TLS handshake |
-| **HTTP** | درخواست HTTP واقعی + کشف datacenter ← **پیشنهادی** | Real HTTP + colo detection ← **recommended** |
-
----
-
-## ✨ ویژگی‌های v2 / What's new in v2
-
-- **⚡ Worker pool** — اسکن با تعداد worker ثابت (بدون ساخت هزاران coroutine)
-- **⚡ Sorted insert** — لیست نتایج بدون sort کامل در هر پکت به‌روز می‌شود
-- **🔗 VMess** — parse لینک `vmess://` (Base64 JSON)
-- **🐛 Bug fix: TCP mode** — نتایج TCP حالا درست به عنوان healthy نمایش داده میشن
-- **🐛 Bug fix: HTTP timeout** — connect timeout قبلاً `timeoutMs/4` بود، الان درست شد
-- **⚡ OkHttpClient cache** — یه client مشترک با connection pool — خیلی سریع‌تر
-- **🔍 Healthy Only toggle** — فقط IPهای سالم نمایش بده
-- **📤 Share** — اشتراک‌گذاری IPها از طریق هر اپی
-- **📊 CSV Export** — خروجی کامل با latency, loss, colo, status
-- **⭐ Quality stars** — ستاره‌بندی بر اساس latency
-- **🌐 Bilingual** — فارسی/انگلیسی خودکار بر اساس زبان گوشی
-- **❓ Help dialog** — راهنمای دو زبانه داخل برنامه
-- **🔗 Shadowsocks support** — ConfigParser حالا ss:// رو هم parse میکنه
-
----
-
-## ⭐ معیار کیفیت / Quality Rating
-
-| ستاره | Latency |
-|-------|---------|
-| ★★★   | < 80ms  |
-| ★★☆   | 80–200ms |
-| ★☆☆   | > 200ms  |
-| ✗     | Unhealthy |
-
----
-
-## 📋 فیلدهای خروجی / Output fields
-
-`ip`, `port`, `latency_ms`, `loss_%`, `colo`, `http_status`, `tls_ok`
-
----
-
-## 🏗 معماری / Architecture
+## Architecture
 
 ```
-MainActivity  ──→  MainViewModel  ──→  ScanEngine (Coroutines + Semaphore)
-                                             ↓
-                                      Prober (TCP / TLS / HTTP)
-                                             ↓
-                                      IpSource  (Cloudflare CIDR ranges)
-                                      ConfigParser (VLESS / Trojan / VMess / ss)
+MainActivity → MainViewModel → ScanRepository.engine
+                    ↓
+            ScanForegroundService (optional)
+                    ↓
+         Prober + IpSource + DataStore settings
 ```
-
----
-
-## 🔐 نکات امنیتی / Security notes
-
-- TLS certificate validation is **disabled** intentionally — this is an IP scanner, not a browser
-- برای اسکن، گواهینامه‌ها validate نمیشن — این یه scanner هست نه مرورگر
-- Never use `trustAll` SSL in production apps

@@ -10,15 +10,10 @@ data class ScanResult(
     val httpStatus: Int,
     val colo: String,
     val throughputKbps: Double,
-    val probeMode: ProbeMode = ProbeMode.HTTP   // ← track which mode was used
+    val probeMode: ProbeMode = ProbeMode.HTTP
 ) {
-    /**
-     * Fix: isHealthy was always false in TCP mode because tlsOk is never set.
-     * Now mode-aware.
-     */
     val isHealthy: Boolean
         get() {
-            // Need at least one successful try (with tries=3, loss 66% still OK)
             if (latencyMs <= 0 || loss >= 100f) return false
             return when (probeMode) {
                 ProbeMode.TCP -> true
@@ -27,8 +22,9 @@ data class ScanResult(
             }
         }
 
+    val endpoint: String get() = "$ip:$port"
+
     companion object {
-        /** Cloudflare edge often returns 403/52x — still means the IP is reachable. */
         fun httpResponseAlive(code: Int): Boolean = when (code) {
             in 200..299, 101 -> true
             301, 302, 307, 308, 400, 403, 404, 421 -> true
@@ -39,10 +35,10 @@ data class ScanResult(
 
     val qualityLabel: String
         get() = when {
-            !isHealthy     -> "✗"
-            latencyMs < 80  -> "★★★"
+            !isHealthy -> "✗"
+            latencyMs < 80 -> "★★★"
             latencyMs < 200 -> "★★☆"
-            else            -> "★☆☆"
+            else -> "★☆☆"
         }
 
     val latencyLabel: String
@@ -50,38 +46,58 @@ data class ScanResult(
 
     val lossLabel: String
         get() = if (loss == 0f) "0%" else "${"%.0f".format(loss)}%"
-
-    val speedLabel: String
-        get() = when {
-            throughputKbps <= 0    -> "—"
-            throughputKbps >= 1024 -> "${"%.1f".format(throughputKbps / 1024)} MB/s"
-            else                   -> "${"%.0f".format(throughputKbps)} KB/s"
-        }
 }
 
 data class ScanConfig(
-    val count: Int        = 500,
-    val concurrency: Int  = 50,
-    val timeoutMs: Long   = 5000,
-    val tries: Int        = 3,
-    val port: Int         = 443,
-    val mode: ProbeMode   = ProbeMode.HTTP,
-    val useV4: Boolean    = true,
-    val useV6: Boolean    = false,
-    val cidr: String      = "",
-    val configUrl: String = "",
-    val sni: String       = "speed.cloudflare.com",
-    val wsPath: String    = "/cdn-cgi/trace",
-    val transport: String = "tcp",
-    // NEW: filter — only emit healthy results to UI
-    val healthyOnly: Boolean = false
+    val count: Int = 500,
+    val concurrency: Int = 50,
+    val timeoutMs: Long = 5000,
+    val tries: Int = 3,
+    val port: Int = 443,
+    val mode: ProbeMode = ProbeMode.HTTP,
+    val cidr: String = "",
+    val sni: String = "speed.cloudflare.com",
+    val wsPath: String = "/cdn-cgi/trace",
+    val healthyOnly: Boolean = false,
+    val useIpv6: Boolean = false,
+    val stopAfterHealthy: Int = 0,
+    val skipKnownFailed: Boolean = false,
+    val maxResults: Int = 500
 )
 
 enum class ProbeMode { TCP, TLS, HTTP }
 
 data class ScanStats(
-    val tested: Int   = 0,
-    val healthy: Int  = 0,
-    val failed: Int   = 0,
-    val inFlight: Int = 0
+    val tested: Int = 0,
+    val healthy: Int = 0,
+    val failed: Int = 0,
+    val inFlight: Int = 0,
+    val totalTargets: Int = 0,
+    val elapsedMs: Long = 0,
+    val etaSeconds: Int = 0,
+    val ipsPerSecond: Float = 0f
+)
+
+enum class ScanPreset(
+    val count: Int,
+    val concurrency: Int,
+    val timeoutSec: Int,
+    val mode: ProbeMode
+) {
+    QUICK(200, 80, 3, ProbeMode.TCP),
+    NORMAL(500, 50, 5, ProbeMode.HTTP),
+    DEEP(2000, 50, 10, ProbeMode.HTTP)
+}
+
+data class AppSettings(
+    val probeSni: String = "speed.cloudflare.com",
+    val probePath: String = "/cdn-cgi/trace",
+    val maxResults: Int = 500,
+    val stopAfterHealthy: Int = 20,
+    val skipKnownFailed: Boolean = true,
+    val vibrateOnHealthy: Boolean = false,
+    val useForegroundService: Boolean = true,
+    val useIpv6: Boolean = false,
+    val scheduledScanEnabled: Boolean = false,
+    val scheduledIntervalHours: Int = 24
 )

@@ -4,20 +4,33 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import androidx.core.app.ActivityCompat
+import androidx.core.content.PermissionChecker
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.senpaiscanner.R
+import com.senpaiscanner.data.SettingsRepository
 import com.senpaiscanner.databinding.ActivityMainBinding
 import com.senpaiscanner.model.ProbeMode
 import com.senpaiscanner.model.ScanConfig
+import com.senpaiscanner.model.ScanPreset
+import com.senpaiscanner.util.ExportHelper
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -32,26 +45,63 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupRecyclerView()
-        setupSliders()
-        setupButtons()
-        updateModeChips(ProbeMode.HTTP)
-        observeViewModel()
-    }
-
-    private fun setupRecyclerView() {
-        adapter = ResultsAdapter()
+        adapter = ResultsAdapter { result ->
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            cm.setPrimaryClip(ClipData.newPlainText("ip", result.endpoint))
+            Toast.makeText(this, getString(R.string.copied_one, result.endpoint), Toast.LENGTH_SHORT).show()
+        }
         binding.recyclerResults.layoutManager = LinearLayoutManager(this)
         binding.recyclerResults.adapter = adapter
         binding.recyclerResults.itemAnimator = null
+
+        binding.tvConcurrencyLabel.text = getString(R.string.label_workers_value, 50)
+        binding.tvTimeoutLabel.text = getString(R.string.label_timeout_value, 5)
+
+        setupSliders()
+        setupButtons()
+        setupPresets()
+        updateModeChips(ProbeMode.HTTP)
+        loadSavedForm()
+        observeViewModel()
+    }
+
+    private fun loadSavedForm() {
+        lifecycleScope.launch {
+            val form = SettingsRepository.scanForm.first()
+            binding.etCount.setText(form.count.toString())
+            binding.etPort.setText(form.port.toString())
+            binding.sliderConcurrency.value = form.concurrency.toFloat()
+            binding.sliderTimeout.value = form.timeoutSec.toFloat()
+            binding.etCidr.setText(form.cidr)
+            binding.switchHealthyOnly.isChecked = form.healthyOnly
+            updateModeChips(form.mode)
+            binding.tvConcurrencyLabel.text = getString(R.string.label_workers_value, form.concurrency)
+            binding.tvTimeoutLabel.text = getString(R.string.label_timeout_value, form.timeoutSec)
+        }
+    }
+
+    private fun setupPresets() {
+        binding.btnPresetQuick.setOnClickListener { applyPreset(ScanPreset.QUICK) }
+        binding.btnPresetNormal.setOnClickListener { applyPreset(ScanPreset.NORMAL) }
+        binding.btnPresetDeep.setOnClickListener { applyPreset(ScanPreset.DEEP) }
+    }
+
+    private fun applyPreset(preset: ScanPreset) {
+        binding.etCount.setText(preset.count.toString())
+        binding.sliderConcurrency.value = preset.concurrency.toFloat()
+        binding.sliderTimeout.value = preset.timeoutSec.toFloat()
+        updateModeChips(preset.mode)
+        binding.tvConcurrencyLabel.text = getString(R.string.label_workers_value, preset.concurrency)
+        binding.tvTimeoutLabel.text = getString(R.string.label_timeout_value, preset.timeoutSec)
+        Toast.makeText(this, getString(R.string.preset_applied, preset.name), Toast.LENGTH_SHORT).show()
     }
 
     private fun setupSliders() {
         binding.sliderConcurrency.addOnChangeListener { _, value, _ ->
-            binding.tvConcurrencyLabel.text = "WORKERS  —  ${value.toInt()}"
+            binding.tvConcurrencyLabel.text = getString(R.string.label_workers_value, value.toInt())
         }
         binding.sliderTimeout.addOnChangeListener { _, value, _ ->
-            binding.tvTimeoutLabel.text = "TIMEOUT  —  ${value.toInt()}s"
+            binding.tvTimeoutLabel.text = getString(R.string.label_timeout_value, value.toInt())
         }
     }
 
@@ -65,66 +115,79 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnCopy.setOnClickListener {
-            val ips = vm.getHealthyIps()
-            if (ips.isEmpty()) {
-                Toast.makeText(this, getString(R.string.no_healthy_ips), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val text = ips.joinToString("\n")
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("CF IPs", text))
-            Toast.makeText(this, getString(R.string.copied_ips, ips.size), Toast.LENGTH_SHORT).show()
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // NEW: Share button — share as plain text
-        binding.btnShare.setOnClickListener {
-            val ips = vm.getHealthyIps()
-            if (ips.isEmpty()) {
-                Toast.makeText(this, getString(R.string.no_healthy_ips), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, ips.joinToString("\n"))
-                putExtra(Intent.EXTRA_SUBJECT, "SenPai Scanner — Healthy IPs")
-            }
-            startActivity(Intent.createChooser(intent, getString(R.string.share_via)))
+        binding.btnCopy.setOnClickListener { copyAll() }
+        binding.btnShare.setOnClickListener { shareText(ExportHelper.toPlainLines(vm.allResults())) }
+        binding.btnExportMenu.setOnClickListener { showExportDialog() }
+        binding.btnHelp.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.help_title)
+                .setMessage(R.string.help_message)
+                .setPositiveButton(R.string.help_ok, null)
+                .show()
         }
-
-        // NEW: Export CSV
-        binding.btnExport.setOnClickListener {
-            val csv = vm.exportCsv()
-            if (csv.lines().size <= 1) {
-                Toast.makeText(this, getString(R.string.no_healthy_ips), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/csv"
-                putExtra(Intent.EXTRA_TEXT, csv)
-                putExtra(Intent.EXTRA_SUBJECT, "SenPai Scanner Export")
-            }
-            startActivity(Intent.createChooser(intent, getString(R.string.export_csv)))
-        }
-
-        binding.btnClear.setOnClickListener {
-            binding.etConfigUrl.text?.clear()
-        }
-
-        // NEW: Help dialog — bilingual FA/EN
-        binding.btnHelp.setOnClickListener { showHelpDialog() }
 
         binding.chipTcp.setOnClickListener { updateModeChips(ProbeMode.TCP) }
         binding.chipTls.setOnClickListener { updateModeChips(ProbeMode.TLS) }
         binding.chipHttp.setOnClickListener { updateModeChips(ProbeMode.HTTP) }
     }
 
+    private fun showExportDialog() {
+        val items = arrayOf(
+            getString(R.string.export_plain),
+            getString(R.string.export_csv),
+            getString(R.string.export_clash),
+            getString(R.string.export_singbox),
+            getString(R.string.export_v2ray)
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.export_csv)
+            .setItems(items) { _, which ->
+                val results = vm.allResults()
+                val sni = vm.appSettings.value.probeSni
+                val text = when (which) {
+                    0 -> ExportHelper.toPlainLines(results)
+                    1 -> ExportHelper.toCsv(results)
+                    2 -> ExportHelper.toClash(results, sni)
+                    3 -> ExportHelper.toSingBox(results, sni)
+                    else -> ExportHelper.toV2rayUri(results)
+                }
+                shareText(text)
+            }
+            .show()
+    }
+
+    private fun shareText(text: String) {
+        if (text.isBlank()) {
+            Toast.makeText(this, R.string.no_healthy_ips, Toast.LENGTH_SHORT).show()
+            return
+        }
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }, getString(R.string.share_via)))
+    }
+
+    private fun copyAll() {
+        val ips = vm.getHealthyIps()
+        if (ips.isEmpty()) {
+            Toast.makeText(this, R.string.no_healthy_ips, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText("CF IPs", ips.joinToString("\n")))
+        Toast.makeText(this, getString(R.string.copied_ips, ips.size), Toast.LENGTH_SHORT).show()
+    }
+
     private fun updateModeChips(mode: ProbeMode) {
         selectedMode = mode
-        val selectedBg  = resources.getDrawable(R.drawable.chip_selected_bg, theme)
-        val normalBg    = resources.getDrawable(R.drawable.chip_bg, theme)
-        val accentColor = resources.getColor(R.color.accent, theme)
-        val normalColor = resources.getColor(R.color.text_primary, theme)
+        val selectedBg = ContextCompat.getDrawable(this, R.drawable.chip_selected_bg)
+        val normalBg = ContextCompat.getDrawable(this, R.drawable.chip_bg)
+        val accentColor = ContextCompat.getColor(this, R.color.accent)
+        val normalColor = ContextCompat.getColor(this, R.color.text_primary)
 
         listOf(
             binding.chipTcp to ProbeMode.TCP,
@@ -136,70 +199,77 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun buildScanConfig(): ScanConfig {
+        val app = vm.appSettings.value
+        return ScanConfig(
+            count = binding.etCount.text?.toString()?.trim()?.toIntOrNull()?.coerceIn(10, 100_000) ?: 500,
+            concurrency = binding.sliderConcurrency.value.toInt(),
+            timeoutMs = binding.sliderTimeout.value.toLong() * 1000L,
+            tries = 3,
+            port = binding.etPort.text?.toString()?.trim()?.toIntOrNull()?.coerceIn(1, 65535) ?: 443,
+            mode = selectedMode,
+            cidr = binding.etCidr.text?.toString()?.trim().orEmpty(),
+            sni = app.probeSni,
+            wsPath = app.probePath,
+            healthyOnly = binding.switchHealthyOnly.isChecked,
+            useIpv6 = app.useIpv6,
+            stopAfterHealthy = app.stopAfterHealthy,
+            skipKnownFailed = app.skipKnownFailed,
+            maxResults = app.maxResults
+        )
+    }
+
     private fun startScan() {
         hideKeyboard()
-
-        val count       = binding.etCount.text?.toString()?.trim()?.toIntOrNull()?.coerceIn(10, 100_000) ?: 500
-        val concurrency = binding.sliderConcurrency.value.toInt()
-        val timeout     = binding.sliderTimeout.value.toLong() * 1000L
-        val port        = binding.etPort.text?.toString()?.trim()?.toIntOrNull() ?: 443
-        val cidr        = binding.etCidr.text?.toString()?.trim() ?: ""
-        val configUrl   = binding.etConfigUrl.text?.toString()?.trim() ?: ""
-        val healthyOnly = binding.switchHealthyOnly.isChecked   // NEW toggle
-
-        var cfg = ScanConfig(
-            count       = count,
-            concurrency = concurrency,
-            timeoutMs   = timeout,
-            tries       = 3,
-            port        = port,
-            mode        = selectedMode,
-            cidr        = cidr,
-            configUrl   = configUrl,
-            healthyOnly = healthyOnly
-        )
-
-        if (configUrl.isNotEmpty()) {
-            cfg = vm.applyConfigUrl(configUrl).copy(
-                count       = count,
-                concurrency = concurrency,
-                timeoutMs   = timeout,
-                healthyOnly = healthyOnly
+        val cfg = buildScanConfig()
+        vm.saveForm(
+            SettingsRepository.ScanFormState(
+                port = cfg.port,
+                count = cfg.count,
+                concurrency = cfg.concurrency,
+                timeoutSec = (cfg.timeoutMs / 1000).toInt(),
+                mode = cfg.mode,
+                cidr = cfg.cidr,
+                healthyOnly = cfg.healthyOnly
             )
+        )
+        if (cfg.count > 300 || vm.appSettings.value.useForegroundService) {
+            requestNotificationPermissionIfNeeded()
         }
-
-        vm.startScan(cfg)
+        vm.startScan(cfg, vm.appSettings.value.useForegroundService)
         binding.btnScan.text = getString(R.string.btn_stop)
         binding.btnCopy.visibility = View.GONE
         binding.btnShare.visibility = View.GONE
-        binding.btnExport.visibility = View.GONE
-        binding.tvEmpty.text = getString(R.string.empty_results)
+        binding.btnExportMenu.visibility = View.GONE
         binding.tvEmpty.visibility = View.GONE
         binding.recyclerResults.visibility = View.VISIBLE
+        binding.tvEta.visibility = View.VISIBLE
     }
 
     private fun observeViewModel() {
         lifecycleScope.launch {
-            vm.results.collectLatest { results ->
+            vm.displayResults.collectLatest { results ->
                 adapter.submitList(results)
-                val lm = binding.recyclerResults.layoutManager as? LinearLayoutManager
-                if (results.isNotEmpty() && (lm == null || lm.findFirstVisibleItemPosition() <= 0)) {
-                    binding.recyclerResults.scrollToPosition(0)
-                }
             }
         }
 
         lifecycleScope.launch {
             vm.stats.collectLatest { stats ->
-                binding.tvStatsTested.text  = stats.tested.toString()
+                binding.tvStatsTested.text = stats.tested.toString()
                 binding.tvStatsHealthy.text = stats.healthy.toString()
-                binding.tvStatsFailed.text  = stats.failed.toString()
+                binding.tvStatsFailed.text = stats.failed.toString()
                 binding.tvStatsInFlight.text = stats.inFlight.toString()
 
-                val cfg = vm.config
-                if (cfg.count > 0 && stats.tested > 0) {
-                    val progress = (stats.tested * 100 / cfg.count).coerceIn(0, 100)
-                    binding.progressScan.setProgressCompat(progress, true)
+                if (stats.totalTargets > 0 && vm.scanning.value) {
+                    binding.progressScan.setProgressCompat(
+                        (stats.tested * 100 / stats.totalTargets).coerceIn(0, 100),
+                        true
+                    )
+                    binding.tvEta.text = getString(
+                        R.string.eta_format,
+                        stats.etaSeconds,
+                        "%.1f".format(stats.ipsPerSecond)
+                    )
                 }
             }
         }
@@ -207,6 +277,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             vm.scanning.collectLatest { scanning ->
                 binding.progressScan.visibility = if (scanning) View.VISIBLE else View.INVISIBLE
+                binding.tvEta.visibility = if (scanning) View.VISIBLE else View.GONE
                 if (!scanning) binding.btnScan.text = getString(R.string.btn_scan)
             }
         }
@@ -215,62 +286,61 @@ class MainActivity : AppCompatActivity() {
             vm.done.collectLatest { done ->
                 if (!done) return@collectLatest
                 val healthy = vm.stats.value.healthy
-                val hasResults = vm.results.value.isNotEmpty()
+                val hasResults = vm.displayResults.value.isNotEmpty()
                 binding.btnCopy.visibility = View.VISIBLE
                 binding.btnShare.visibility = View.VISIBLE
-                binding.btnExport.visibility = View.VISIBLE
+                binding.btnExportMenu.visibility = View.VISIBLE
                 if (!hasResults) {
                     binding.tvEmpty.text = getString(R.string.empty_no_results)
                     binding.tvEmpty.visibility = View.VISIBLE
-                    binding.recyclerResults.visibility = View.GONE
                 }
-                Toast.makeText(
-                    this@MainActivity,
-                    getString(R.string.scan_done, healthy),
-                    Toast.LENGTH_LONG
-                ).show()
+                val stable = vm.compareCount.value
+                val msg = if (stable > 0) {
+                    getString(R.string.scan_done_compare, healthy, stable)
+                } else {
+                    getString(R.string.scan_done, healthy)
+                }
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+                updateColoSpinner()
+            }
+        }
+
+        lifecycleScope.launch {
+            vm.onHealthyFound.collect {
+                if (vm.appSettings.value.vibrateOnHealthy) vibrateShort()
             }
         }
     }
 
-    // ─── Help Dialog — bilingual ──────────────────────────────────────────────
-    private fun showHelpDialog() {
-        val message = """
-🇮🇷 راهنما
-──────────────
-• حالت TCP: فقط اتصال پایه چک می‌شه (سریع‌ترین)
-• حالت TLS: TLS handshake کامل انجام میشه
-• حالت HTTP: درخواست HTTP واقعی + کشف datacenter (پیشنهادی)
+    private fun updateColoSpinner() {
+        val colos = listOf(getString(R.string.colo_all)) + vm.availableColos()
+        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, colos)
+        binding.spinnerColo.adapter = adapterSpinner
+        binding.spinnerColo.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                val value = colos[pos]
+                vm.setColoFilter(if (pos == 0) null else value)
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+    }
 
-• Config URL: آدرس VLESS/Trojan/VMess رو وارد کن تا SNI و پورت خودکار تنظیم بشه
-• CIDR: محدوده IP سفارشی — مثلاً 104.16.0.0/14
-• Workers: تعداد اتصال همزمان (50 پیش‌فرض)
-• Healthy Only: فقط IPهای سالم نمایش داده بشن
+    private fun vibrateShort() {
+        val vibrator = getSystemService(Vibrator::class.java) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(40, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(40)
+        }
+    }
 
-──────────────
-🇬🇧 Guide
-──────────────
-• TCP mode: raw connect only — fastest, minimal info
-• TLS mode: full TLS handshake — confirms encryption works
-• HTTP mode: real HTTP request + datacenter detection (recommended)
-
-• Config URL: paste VLESS/Trojan/VMess link — SNI & port auto-detected
-• CIDR: custom IP range e.g. 104.16.0.0/14
-• Workers: concurrent connections (50 default)
-• Healthy Only: hide failed IPs from list
-
-──────────────
-⭐ Quality
-• ★★★  < 80ms
-• ★★☆  80–200ms
-• ★☆☆  > 200ms
-        """.trimIndent()
-
-        AlertDialog.Builder(this)
-            .setTitle("SenPai Scanner — Help / راهنما")
-            .setMessage(message)
-            .setPositiveButton("OK / باشه", null)
-            .show()
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (PermissionChecker.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            == PermissionChecker.PERMISSION_GRANTED
+        ) return
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
     }
 
     private fun hideKeyboard() {
@@ -280,6 +350,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        vm.stopScan()
+        if (isFinishing) vm.stopScan()
     }
 }

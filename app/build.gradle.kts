@@ -11,8 +11,8 @@ android {
         applicationId = "com.senpaiscanner"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 4
+        versionName = "3.0.0"
     }
 
     buildTypes {
@@ -33,6 +33,10 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -61,4 +65,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.activity.ktx)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.datastore)
+    implementation(libs.androidx.work)
+    implementation(libs.androidx.preference)
+    testImplementation(libs.junit)
 }

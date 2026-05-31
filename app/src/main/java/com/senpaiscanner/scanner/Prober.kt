@@ -54,7 +54,8 @@ object Prober {
         var colo        = ""
         var successCount = 0
 
-        repeat(cfg.tries) { i ->
+        val tries = effectiveTries(cfg)
+        repeat(tries) { i ->
             when (cfg.mode) {
                 ProbeMode.TCP -> {
                     val lat = probeTcp(ip, cfg.port, cfg.timeoutMs)
@@ -75,11 +76,11 @@ object Prober {
                 }
             }
             // small back-off between retries (skip on last)
-            if (i < cfg.tries - 1) delay(if (i == 0) 15L else 30L)
+            if (i < tries - 1) delay(if (i == 0) 15L else 30L)
         }
 
-        val loss   = if (cfg.tries == 0) 100f
-                     else ((cfg.tries - successCount).toFloat() / cfg.tries) * 100f
+        val loss   = if (tries == 0) 100f
+                     else ((tries - successCount).toFloat() / tries) * 100f
         val avgLat = if (latencies.isEmpty()) 0L else latencies.average().toLong()
 
         return ScanResult(
@@ -94,6 +95,12 @@ object Prober {
             throughputKbps = 0.0,
             probeMode      = cfg.mode        // ← pass mode so isHealthy works correctly
         )
+    }
+
+    fun effectiveTries(cfg: ScanConfig): Int = when (cfg.mode) {
+        ProbeMode.TCP -> 1
+        ProbeMode.TLS -> minOf(cfg.tries, 2).coerceAtLeast(1)
+        ProbeMode.HTTP -> cfg.tries.coerceIn(1, 5)
     }
 
     // ─── TCP ──────────────────────────────────────────────────────────────────
