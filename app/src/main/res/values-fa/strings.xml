@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">اسکنر سن‌پای</string>
+    <string name="btn_scan">▶  اسکن</string>
+    <string name="btn_stop">■  توقف</string>
+    <string name="preset_quick">سریع</string>
+    <string name="preset_normal">عادی</string>
+    <string name="preset_deep">عمیق</string>
+    <string name="preset_applied">پیش‌تنظیم %1$s اعمال شد</string>
+    <string name="scan_done_compare">✓ %1$d سالم (%2$d پایدار نسبت به اسکن قبل)</string>
+    <string name="colo_all">همه colo</string>
+    <string name="eta_format">باقی‌مانده ~%1$dث · %2$s IP/ث</string>
+    <string name="copied_one">✓ کپی شد: %1$s</string>
+    <string name="settings_title">تنظیمات</string>
+    <string name="version_label">نسخه ۳ اندروید</string>
+    <string name="help_title">راهنما</string>
+    <string name="help_ok">باشه</string>
+</resources>
