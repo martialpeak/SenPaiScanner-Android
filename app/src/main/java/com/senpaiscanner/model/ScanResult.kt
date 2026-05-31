@@ -22,7 +22,7 @@ data class ScanResult(
             return when (probeMode) {
                 ProbeMode.TCP  -> true   // TCP: connect succeeded = healthy
                 ProbeMode.TLS  -> tlsOk  // TLS: handshake must succeed
-                ProbeMode.HTTP -> tlsOk && (httpStatus in 200..299 || httpStatus == 101 || httpStatus == 0)
+                ProbeMode.HTTP -> tlsOk && (httpStatus in 200..299 || httpStatus == 101)
             }
         }
 

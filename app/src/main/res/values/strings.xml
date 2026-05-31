@@ -32,4 +32,8 @@
     <string name="stat_healthy">HEALTHY</string>
     <string name="stat_failed">FAILED</string>
     <string name="stat_inflight">LIVE</string>
+
+    <string name="version_label">v2.0 android</string>
+    <string name="empty_results">Press SCAN to start</string>
+    <string name="header_title">SenPai Scanner</string>
 </resources>

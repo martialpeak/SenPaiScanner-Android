@@ -44,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerResults.layoutManager = LinearLayoutManager(this)
         binding.recyclerResults.adapter = adapter
         binding.recyclerResults.itemAnimator = null
-        binding.recyclerResults.setHasFixedSize(true)  // perf: fixed-size rows
     }
 
     private fun setupSliders() {
@@ -181,8 +180,9 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         lifecycleScope.launch {
             vm.results.collectLatest { results ->
-                adapter.submitList(results.toList())
-                if (results.isNotEmpty()) {
+                adapter.submitList(results)
+                val lm = binding.recyclerResults.layoutManager as? LinearLayoutManager
+                if (results.isNotEmpty() && (lm == null || lm.findFirstVisibleItemPosition() <= 0)) {
                     binding.recyclerResults.scrollToPosition(0)
                 }
             }

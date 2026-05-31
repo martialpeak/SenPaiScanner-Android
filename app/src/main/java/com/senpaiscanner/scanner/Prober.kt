@@ -3,6 +3,7 @@ package com.senpaiscanner.scanner
 import com.senpaiscanner.model.ProbeMode
 import com.senpaiscanner.model.ScanConfig
 import com.senpaiscanner.model.ScanResult
+import kotlinx.coroutines.delay
 import okhttp3.ConnectionPool
 import okhttp3.Dns
 import okhttp3.OkHttpClient
@@ -46,7 +47,7 @@ object Prober {
     }
 
     // ─── Public entry point ───────────────────────────────────────────────────
-    fun probe(ip: String, cfg: ScanConfig): ScanResult {
+    suspend fun probe(ip: String, cfg: ScanConfig): ScanResult {
         val latencies   = mutableListOf<Long>()
         var tlsOk       = false
         var httpStatus  = 0
@@ -74,7 +75,7 @@ object Prober {
                 }
             }
             // small back-off between retries (skip on last)
-            if (i < cfg.tries - 1) Thread.sleep(if (i == 0) 15L else 30L)
+            if (i < cfg.tries - 1) delay(if (i == 0) 15L else 30L)
         }
 
         val loss   = if (cfg.tries == 0) 100f

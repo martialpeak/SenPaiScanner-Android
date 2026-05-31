@@ -7,8 +7,12 @@ import com.senpaiscanner.model.ScanResult
 import com.senpaiscanner.model.ScanStats
 import com.senpaiscanner.scanner.ConfigParser
 import com.senpaiscanner.scanner.ScanEngine
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class MainViewModel : ViewModel() {
 
@@ -27,25 +31,35 @@ class MainViewModel : ViewModel() {
 
     var config = ScanConfig()
 
+    private val resultsMutex = Mutex()
+
+    private val resultOrder = compareBy<ScanResult>(
+        { !it.isHealthy },
+        { it.latencyMs.takeIf { l -> l > 0 } ?: Long.MAX_VALUE }
+    )
+
     init {
         viewModelScope.launch {
-            engine.results.collect { result ->
-                val updated = (_results.value + result)
-                    .sortedWith(
-                        compareBy(
-                            { !it.isHealthy },
-                            { it.latencyMs.takeIf { l -> l > 0 } ?: Long.MAX_VALUE }
-                        )
-                    )
-                    .take(500)
-                _results.value = updated
-            }
+            engine.results.collect { result -> addResult(result) }
         }
         viewModelScope.launch {
             engine.done.collect {
                 _scanning.value = false
                 _done.value = true
             }
+        }
+    }
+
+    private suspend fun addResult(result: ScanResult) {
+        resultsMutex.withLock {
+            val list = _results.value.toMutableList()
+            val insertAt = list.binarySearch { resultOrder.compare(it, result) }
+                .let { if (it >= 0) it else -it - 1 }
+            list.add(insertAt, result)
+            if (list.size > MAX_RESULTS) {
+                list.subList(MAX_RESULTS, list.size).clear()
+            }
+            _results.value = list
         }
     }
 
@@ -65,15 +79,12 @@ class MainViewModel : ViewModel() {
     fun applyConfigUrl(url: String): ScanConfig =
         ConfigParser.toScanConfig(url, config)
 
-    /** Returns top healthy IPs formatted as ip:port, sorted by latency */
     fun getHealthyIps(): List<String> =
         _results.value
             .filter { it.isHealthy }
-            .sortedBy { it.latencyMs }
             .take(20)
             .map { "${it.ip}:${it.port}" }
 
-    /** Full CSV export: ip,port,latency,loss,colo,status,tls */
     fun exportCsv(): String {
         val header = "ip,port,latency_ms,loss_pct,colo,http_status,tls_ok"
         val rows = _results.value.filter { it.isHealthy }.joinToString("\n") { r ->
@@ -85,5 +96,9 @@ class MainViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         engine.cancel()
+    }
+
+    private companion object {
+        const val MAX_RESULTS = 500
     }
 }

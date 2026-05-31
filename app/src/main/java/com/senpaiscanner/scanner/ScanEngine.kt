@@ -12,11 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * ScanEngine v2 — improvements:
- *  - Stats updated every 150ms (was 200ms) for snappier UI
- *  - Semaphore uses a fair Channel to prevent starvation
- *  - healthyOnly filter: only emit to UI when result.isHealthy
- *  - Tracks best latency for live leaderboard
+ * Fixed worker pool: [concurrency] coroutines drain a shared IP channel
+ * (avoids spawning one coroutine per IP — safe for 100k+ targets).
  */
 class ScanEngine {
 
@@ -34,48 +31,68 @@ class ScanEngine {
     fun start(cfg: ScanConfig, scope: CoroutineScope) {
         job?.cancel()
         job = scope.launch(Dispatchers.IO) {
-            val tested   = AtomicInteger(0)
-            val healthy  = AtomicInteger(0)
-            val failed   = AtomicInteger(0)
+            val tested = AtomicInteger(0)
+            val healthy = AtomicInteger(0)
+            val failed = AtomicInteger(0)
             val inFlight = AtomicInteger(0)
 
-            val extraCidrs = if (cfg.cidr.isNotBlank())
+            val extraCidrs = if (cfg.cidr.isNotBlank()) {
                 cfg.cidr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            else emptyList()
+            } else {
+                emptyList()
+            }
 
             val ips = IpSource.generateV4(cfg.count, extraCidrs)
+            val workers = cfg.concurrency.coerceIn(1, 500)
+            val ipChannel = Channel<String>(capacity = workers * 8)
 
-            // Channel used as a counting semaphore
-            val semaphore = Channel<Unit>(cfg.concurrency)
+            val feeder = launch {
+                try {
+                    for (ip in ips) {
+                        ipChannel.send(ip)
+                    }
+                } finally {
+                    ipChannel.close()
+                }
+            }
 
             val statsJob = launch {
                 while (isActive) {
-                    _stats.value = ScanStats(tested.get(), healthy.get(), failed.get(), inFlight.get())
+                    _stats.value = ScanStats(
+                        tested.get(),
+                        healthy.get(),
+                        failed.get(),
+                        inFlight.get()
+                    )
                     delay(150)
                 }
             }
 
-            val workerJobs = ips.map { ip ->
+            val workerJobs = List(workers) {
                 launch {
-                    semaphore.send(Unit)
-                    inFlight.incrementAndGet()
-                    try {
-                        if (!isActive) return@launch
-                        val result = Prober.probe(ip, cfg)
-                        tested.incrementAndGet()
-                        if (result.isHealthy) healthy.incrementAndGet() else failed.incrementAndGet()
-                        // NEW: healthyOnly filter
-                        if (!cfg.healthyOnly || result.isHealthy) {
-                            _results.emit(result)
+                    for (ip in ipChannel) {
+                        if (!isActive) break
+                        inFlight.incrementAndGet()
+                        try {
+                            val result = Prober.probe(ip, cfg)
+                            tested.incrementAndGet()
+                            if (result.isHealthy) {
+                                healthy.incrementAndGet()
+                            } else {
+                                failed.incrementAndGet()
+                            }
+                            if (!cfg.healthyOnly || result.isHealthy) {
+                                _results.emit(result)
+                            }
+                        } finally {
+                            inFlight.decrementAndGet()
                         }
-                    } finally {
-                        inFlight.decrementAndGet()
-                        semaphore.receive()
                     }
                 }
             }
 
             workerJobs.joinAll()
+            feeder.join()
             statsJob.cancel()
             _stats.value = ScanStats(tested.get(), healthy.get(), failed.get(), 0)
             _done.emit(Unit)

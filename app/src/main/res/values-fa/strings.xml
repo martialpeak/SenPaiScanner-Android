@@ -25,4 +25,7 @@
     <string name="stat_healthy">سالم</string>
     <string name="stat_failed">ناموفق</string>
     <string name="stat_inflight">در حال</string>
+    <string name="version_label">نسخه ۲ اندروید</string>
+    <string name="empty_results">برای شروع دکمه اسکن را بزنید</string>
+    <string name="header_title">اسکنر سن‌پای</string>
 </resources>

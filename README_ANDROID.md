@@ -26,6 +26,9 @@
 
 ## ✨ ویژگی‌های v2 / What's new in v2
 
+- **⚡ Worker pool** — اسکن با تعداد worker ثابت (بدون ساخت هزاران coroutine)
+- **⚡ Sorted insert** — لیست نتایج بدون sort کامل در هر پکت به‌روز می‌شود
+- **🔗 VMess** — parse لینک `vmess://` (Base64 JSON)
 - **🐛 Bug fix: TCP mode** — نتایج TCP حالا درست به عنوان healthy نمایش داده میشن
 - **🐛 Bug fix: HTTP timeout** — connect timeout قبلاً `timeoutMs/4` بود، الان درست شد
 - **⚡ OkHttpClient cache** — یه client مشترک با connection pool — خیلی سریع‌تر

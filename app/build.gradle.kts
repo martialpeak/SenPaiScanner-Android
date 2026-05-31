@@ -60,4 +60,5 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.okhttp)
     implementation(libs.activity.ktx)
+    implementation(libs.androidx.recyclerview)
 }
