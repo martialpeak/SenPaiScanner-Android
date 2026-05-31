@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Persian (Farsi) strings — res/values-fa/ -->
+<resources>
+    <string name="app_name">اسکنر سن‌پای</string>
+    <string name="btn_scan">▶  اسکن</string>
+    <string name="btn_stop">■  توقف</string>
+    <string name="btn_copy">کپی IPها</string>
+    <string name="btn_share">اشتراک</string>
+    <string name="btn_export">CSV</string>
+    <string name="btn_help">?</string>
+    <string name="btn_clear">✕</string>
+    <string name="no_healthy_ips">هنوز IP سالمی یافت نشد</string>
+    <string name="copied_ips">✓ %1$d آی‌پی کپی شد</string>
+    <string name="share_via">اشتراک‌گذاری از طریق</string>
+    <string name="export_csv">خروجی CSV</string>
+    <string name="scan_done">✓ پایان — %1$d آی‌پی سالم یافت شد</string>
+    <string name="label_workers">تعداد کارگر</string>
+    <string name="label_timeout">تایم‌اوت</string>
+    <string name="label_healthy_only">فقط سالم‌ها</string>
+    <string name="hint_count">تعداد (مثلاً ۵۰۰)</string>
+    <string name="hint_port">پورت (مثلاً ۴۴۳)</string>
+    <string name="hint_cidr">CIDR (مثلاً 104.16.0.0/14)</string>
+    <string name="hint_config">لینک VLESS / Trojan / VMess</string>
+    <string name="stat_tested">آزموده</string>
+    <string name="stat_healthy">سالم</string>
+    <string name="stat_failed">ناموفق</string>
+    <string name="stat_inflight">در حال</string>
+</resources>

@@ -1,4 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SenPai Scanner</string>
+
+    <!-- Buttons -->
+    <string name="btn_scan">▶  SCAN</string>
+    <string name="btn_stop">■  STOP</string>
+    <string name="btn_copy">COPY IPs</string>
+    <string name="btn_share">SHARE</string>
+    <string name="btn_export">CSV</string>
+    <string name="btn_help">?</string>
+    <string name="btn_clear">✕</string>
+
+    <!-- Toasts -->
+    <string name="no_healthy_ips">No healthy IPs yet / هنوز IP سالمی نیست</string>
+    <string name="copied_ips">✓ Copied %1$d IPs</string>
+    <string name="share_via">Share via / اشتراک‌گذاری</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="scan_done">✓ Done — %1$d healthy IPs found</string>
+
+    <!-- Labels -->
+    <string name="label_workers">WORKERS</string>
+    <string name="label_timeout">TIMEOUT</string>
+    <string name="label_healthy_only">Healthy Only / فقط سالم</string>
+    <string name="hint_count">Count (e.g. 500)</string>
+    <string name="hint_port">Port (e.g. 443)</string>
+    <string name="hint_cidr">CIDR (e.g. 104.16.0.0/14)</string>
+    <string name="hint_config">VLESS / Trojan / VMess URL</string>
+
+    <!-- Stats -->
+    <string name="stat_tested">TESTED</string>
+    <string name="stat_healthy">HEALTHY</string>
+    <string name="stat_failed">FAILED</string>
+    <string name="stat_inflight">LIVE</string>
 </resources>

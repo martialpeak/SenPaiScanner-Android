@@ -9,57 +9,56 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.senpaiscanner.R
+import com.senpaiscanner.model.ProbeMode
 import com.senpaiscanner.model.ScanResult
 
 class ResultsAdapter : ListAdapter<ScanResult, ResultsAdapter.VH>(DIFF) {
 
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvIp: TextView = itemView.findViewById(R.id.tv_ip)
+        val tvIp:      TextView = itemView.findViewById(R.id.tv_ip)
         val tvLatency: TextView = itemView.findViewById(R.id.tv_latency)
-        val tvLoss: TextView = itemView.findViewById(R.id.tv_loss)
-        val tvColo: TextView = itemView.findViewById(R.id.tv_colo)
-        val tvStatus: TextView = itemView.findViewById(R.id.tv_status)
-        val tvTls: TextView = itemView.findViewById(R.id.tv_tls)
-        val dot: View = itemView.findViewById(R.id.dot_health)
+        val tvLoss:    TextView = itemView.findViewById(R.id.tv_loss)
+        val tvColo:    TextView = itemView.findViewById(R.id.tv_colo)
+        val tvStatus:  TextView = itemView.findViewById(R.id.tv_status)
+        val tvTls:     TextView = itemView.findViewById(R.id.tv_tls)
+        val tvQuality: TextView = itemView.findViewById(R.id.tv_quality)
+        val dot:       View     = itemView.findViewById(R.id.dot_health)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_result, parent, false)
+        val v = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_result, parent, false)
         return VH(v)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val r = getItem(position)
+        val r   = getItem(position)
         val ctx = holder.itemView.context
 
-        holder.tvIp.text = "${r.ip}:${r.port}"
+        holder.tvIp.text      = "${r.ip}:${r.port}"
         holder.tvLatency.text = r.latencyLabel
-        holder.tvLoss.text = r.lossLabel
-        holder.tvColo.text = r.colo.ifEmpty { "—" }
-        holder.tvStatus.text = if (r.httpStatus > 0) r.httpStatus.toString() else "—"
-        holder.tvTls.text = when {
-            r.tlsOk -> "TLS ✓"
-            r.probeMode == "tcp" -> "TCP"
-            else -> "—"
+        holder.tvLoss.text    = r.lossLabel
+        holder.tvColo.text    = r.colo.ifEmpty { "—" }
+        holder.tvQuality.text = r.qualityLabel
+
+        // Mode-aware TLS label
+        holder.tvTls.text = when (r.probeMode) {
+            ProbeMode.TCP  -> "TCP"
+            ProbeMode.TLS  -> if (r.tlsOk) "TLS ✓" else "TLS ✗"
+            ProbeMode.HTTP -> if (r.tlsOk) "HTTPS" else "HTTP"
         }
+        holder.tvStatus.text = if (r.httpStatus > 0) r.httpStatus.toString() else "—"
 
         val color = when {
-            !r.isHealthy -> ContextCompat.getColor(ctx, R.color.bad)
-            r.latencyMs < 100 -> ContextCompat.getColor(ctx, R.color.good)
-            r.latencyMs < 300 -> ContextCompat.getColor(ctx, R.color.warn)
-            else -> ContextCompat.getColor(ctx, R.color.warn)
+            !r.isHealthy      -> ContextCompat.getColor(ctx, R.color.bad)
+            r.latencyMs < 80  -> ContextCompat.getColor(ctx, R.color.good)
+            r.latencyMs < 200 -> ContextCompat.getColor(ctx, R.color.warn)
+            else              -> ContextCompat.getColor(ctx, R.color.warn)
         }
         holder.dot.setBackgroundTintList(
             android.content.res.ColorStateList.valueOf(color)
         )
         holder.tvLatency.setTextColor(color)
-    }
-
-    // Need probeMode accessible
-    private val ScanResult.probeMode: String get() = when {
-        tlsOk -> "tls"
-        httpStatus > 0 -> "http"
-        else -> "tcp"
     }
 
     companion object {

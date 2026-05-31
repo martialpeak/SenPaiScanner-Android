@@ -5,7 +5,7 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:paddingHorizontal="8dp"
-    android:paddingVertical="10dp"
+    android:paddingVertical="9dp"
     android:background="@drawable/result_item_bg">
 
     <!-- Health dot -->
@@ -27,7 +27,7 @@
         android:fontFamily="monospace"
         android:singleLine="true"/>
 
-    <!-- Latency -->
+    <!-- Latency (color-coded) -->
     <TextView
         android:id="@+id/tv_latency"
         android:layout_width="0dp"
@@ -47,6 +47,16 @@
         android:textSize="11sp"
         android:fontFamily="monospace"/>
 
+    <!-- Quality stars -->
+    <TextView
+        android:id="@+id/tv_quality"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/warn"
+        android:textSize="10sp"
+        android:fontFamily="monospace"/>
+
     <!-- Colo -->
     <TextView
         android:id="@+id/tv_colo"
@@ -57,7 +67,7 @@
         android:textSize="11sp"
         android:fontFamily="monospace"/>
 
-    <!-- TLS / Status (hidden in small space, shown as badge) -->
+    <!-- TLS badge -->
     <TextView
         android:id="@+id/tv_tls"
         android:layout_width="wrap_content"
@@ -66,6 +76,7 @@
         android:textSize="9sp"
         android:fontFamily="monospace"/>
 
+    <!-- HTTP Status -->
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="wrap_content"
@@ -73,7 +84,6 @@
         android:textColor="@color/text_dim"
         android:textSize="9sp"
         android:fontFamily="monospace"
-        android:layout_marginStart="4dp"
-        android:visibility="gone"/>
+        android:layout_marginStart="4dp"/>
 
 </LinearLayout>
