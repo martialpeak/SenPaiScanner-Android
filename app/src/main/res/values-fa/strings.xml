@@ -27,5 +27,6 @@
     <string name="stat_inflight">در حال</string>
     <string name="version_label">نسخه ۲ اندروید</string>
     <string name="empty_results">برای شروع دکمه اسکن را بزنید</string>
+    <string name="empty_no_results">نتیجه‌ای نیست — حالت HTTP، خاموش کردن «فقط سالم‌ها»، یا تایم‌اوت بیشتر را امتحان کنید</string>
     <string name="header_title">اسکنر سن‌پای</string>
 </resources>

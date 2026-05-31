@@ -18,13 +18,24 @@ data class ScanResult(
      */
     val isHealthy: Boolean
         get() {
-            if (latencyMs <= 0 || loss > 20f) return false
+            // Need at least one successful try (with tries=3, loss 66% still OK)
+            if (latencyMs <= 0 || loss >= 100f) return false
             return when (probeMode) {
-                ProbeMode.TCP  -> true   // TCP: connect succeeded = healthy
-                ProbeMode.TLS  -> tlsOk  // TLS: handshake must succeed
-                ProbeMode.HTTP -> tlsOk && (httpStatus in 200..299 || httpStatus == 101)
+                ProbeMode.TCP -> true
+                ProbeMode.TLS -> tlsOk
+                ProbeMode.HTTP -> httpResponseAlive(httpStatus)
             }
         }
+
+    companion object {
+        /** Cloudflare edge often returns 403/52x — still means the IP is reachable. */
+        fun httpResponseAlive(code: Int): Boolean = when (code) {
+            in 200..299, 101 -> true
+            301, 302, 307, 308, 400, 403, 404, 421 -> true
+            in 520..530 -> true
+            else -> false
+        }
+    }
 
     val qualityLabel: String
         get() = when {

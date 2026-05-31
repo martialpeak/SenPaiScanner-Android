@@ -43,6 +43,11 @@ class ScanEngine {
             }
 
             val ips = IpSource.generateV4(cfg.count, extraCidrs)
+            if (ips.isEmpty()) {
+                _stats.value = ScanStats(0, 0, 0, 0)
+                _done.emit(Unit)
+                return@launch
+            }
             val workers = cfg.concurrency.coerceIn(1, 500)
             val ipChannel = Channel<String>(capacity = workers * 8)
 

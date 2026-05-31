@@ -140,7 +140,12 @@ object Prober {
         return try {
             val scheme    = if (port == 80 || port == 8080) "http" else "https"
             val probePath = if (path.isNotBlank() && path != "/") path else "/cdn-cgi/trace"
-            val url       = "$scheme://$sni$probePath"
+            val authority = when {
+                scheme == "https" && port != 443 -> "$sni:$port"
+                scheme == "http" && port != 80 -> "$sni:$port"
+                else -> sni
+            }
+            val url       = "$scheme://$authority$probePath"
 
             // IP-pin: force DNS to resolve to the target IP regardless of SNI
             val fixedDns = object : Dns {
@@ -175,10 +180,11 @@ object Prober {
                 parseColoRay(resp.header("CF-Ray") ?: "")
             }
 
-            val success = resp.code in 200..299 || resp.code == 101
+            val success = ScanResult.httpResponseAlive(resp.code)
+            val tlsHandshakeOk = scheme == "https"
             resp.close()
 
-            HttpProbeResult(lat, true, success, resp.code, colo)
+            HttpProbeResult(lat, tlsHandshakeOk, success, resp.code, colo)
         } catch (_: Exception) {
             HttpProbeResult(0L, false, false, 0, "")
         }

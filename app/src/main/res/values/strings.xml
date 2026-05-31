@@ -35,5 +35,6 @@
 
     <string name="version_label">v2.0 android</string>
     <string name="empty_results">Press SCAN to start</string>
+    <string name="empty_no_results">No results — try HTTP mode, turn off Healthy Only, or increase timeout</string>
     <string name="header_title">SenPai Scanner</string>
 </resources>

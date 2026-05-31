@@ -173,6 +173,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnCopy.visibility = View.GONE
         binding.btnShare.visibility = View.GONE
         binding.btnExport.visibility = View.GONE
+        binding.tvEmpty.text = getString(R.string.empty_results)
         binding.tvEmpty.visibility = View.GONE
         binding.recyclerResults.visibility = View.VISIBLE
     }
@@ -212,17 +213,22 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             vm.done.collectLatest { done ->
-                if (done) {
-                    binding.btnCopy.visibility   = View.VISIBLE
-                    binding.btnShare.visibility  = View.VISIBLE
-                    binding.btnExport.visibility = View.VISIBLE
-                    val healthy = vm.stats.value.healthy
-                    Toast.makeText(
-                        this@MainActivity,
-                        getString(R.string.scan_done, healthy),
-                        Toast.LENGTH_LONG
-                    ).show()
+                if (!done) return@collectLatest
+                val healthy = vm.stats.value.healthy
+                val hasResults = vm.results.value.isNotEmpty()
+                binding.btnCopy.visibility = View.VISIBLE
+                binding.btnShare.visibility = View.VISIBLE
+                binding.btnExport.visibility = View.VISIBLE
+                if (!hasResults) {
+                    binding.tvEmpty.text = getString(R.string.empty_no_results)
+                    binding.tvEmpty.visibility = View.VISIBLE
+                    binding.recyclerResults.visibility = View.GONE
                 }
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.scan_done, healthy),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
